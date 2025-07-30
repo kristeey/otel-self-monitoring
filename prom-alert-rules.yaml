@@ -1,0 +1,196 @@
+# Inspired by:
+# - https://github.com/open-telemetry/opentelemetry-helm-charts/blob/main/charts/opentelemetry-collector/templates/prometheusrule.yaml
+# - https://github.com/monitoringartist/opentelemetry-collector-monitoring/blob/main/README.md
+groups:
+  - name: opentelemetry-collector
+    rules:
+      - alert: OtelReceiverDroppedSpans
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_receiver_refused_spans_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 2m
+        labels:
+          severity: critical
+          alertname: OtelReceiverDroppedSpans
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 28
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.receiver }} receiver is dropping spans at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelReceiverDroppedMetrics
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_receiver_refused_metric_points_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 2m
+        labels:
+          severity: critical
+          alertname: OtelReceiverDroppedMetrics
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 32
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.receiver }} receiver is dropping metrics at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelReceiverDroppedLogs
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_receiver_refused_log_records_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          )
+        for: 5m
+        labels:
+          severity: critical
+          alertname: OtelReceiverDroppedLogs
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 47
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary:  The {{ $labels.receiver }} is dropping logs at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelExporterDroppedSpans
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_send_failed_spans_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 2m
+        labels:
+          severity: critical
+          alertname: OtelExporterDroppedSpans
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 37
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} exporter is dropping spans at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelExporterDroppedMetrics
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_send_failed_metric_points_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 2m
+        labels:
+          severity: critical
+          alertname: OtelExporterDroppedMetrics
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 38
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} exporter is dropping metrics at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelExporterDroppedLogs
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_send_failed_log_records_total[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 5m
+        labels:
+          severity: critical
+          alertname: OtelExporterDroppedLogs
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 48
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary:  The {{ $labels.exporter }} is dropping logs at a rate of {{ humanize $value }} per second.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#receive-failures'
+      - alert: OtelExporterQueueSize
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              otelcol_exporter_queue_size,
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 5000
+        for: 1m
+        labels:
+          severity: warning
+          alertname: OtelExporterQueueSize
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 10
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} queue has reached a size of {{ $value }}.
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#queue-length'
+      - alert: OtelSendQueueFailedSpans
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_enqueue_failed_spans[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: OtelSendQueueFailedSpans
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 37
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} sending queue failed to accept {{ $value }} `}} spans'
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#queue-length'
+      - alert: OtelSendQueueFailedMetricPoints
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_enqueue_failed_metric_points[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: OtelSendQueueFailedMetricPoints
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 38
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} sending queue failed to accept {{ $value }} `}} metric points'
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#queue-length'
+      - alert: OtelSendQueueFailedLogRecords
+        expr: |
+          sum by (k8s_cluster_name, k8s_namespace_name, receiver, collector) (
+            label_replace(
+              rate(otelcol_exporter_enqueue_failed_log_records[5m]),
+              "collector", "$1", "k8s_pod_name", "^(.*-collector)-.*$"
+            )
+          ) > 0
+        for: 1m
+        labels:
+          severity: warning
+          alertname: OtelSendQueueFailedLogRecords
+        annotations:
+          __dashboardUid__: otel-collector
+          __panelId__: 48
+          instance: |
+            cluster: {{ $labels.k8s_cluster_name }}, namespace: {{ $labels.k8s_namespace_name }}, component: {{ $labels.collector }}
+          summary: The {{ $labels.exporter }} sending queue failed to accept {{ $value }} `}} log records.'
+          runbook_url: 'https://opentelemetry.io/docs/collector/internal-telemetry/#queue-length'
